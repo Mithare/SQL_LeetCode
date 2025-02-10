@@ -1,0 +1,201 @@
+--PROBLEM 1: Last Person to Fit in the Bus
+/**
+Table: Queue
+
++-------------+---------+
+| Column Name | Type    |
++-------------+---------+
+| person_id   | int     |
+| person_name | varchar |
+| weight      | int     |
+| turn        | int     |
++-------------+---------+
+person_id column contains unique values.
+This table has the information about all people waiting for a bus.
+The person_id and turn columns will contain all numbers from 1 to n, where n is the number of rows in the table.
+turn determines the order of which the people will board the bus, where turn=1 denotes the first person to board and turn=n denotes the last person to board.
+weight is the weight of the person in kilograms.
+ 
+
+There is a queue of people waiting to board a bus. However, the bus has a weight limit of 1000 kilograms, so there may be some people who cannot board.
+
+Write a solution to find the person_name of the last person that can fit on the bus without exceeding the weight limit. The test cases are generated such that the first person does not exceed the weight limit.
+
+Note that only one person can board the bus at any given turn.
+**/
+
+
+--SOLUTION
+
+with cte as (
+select person_name, sum(weight) over(order by turn asc) as tot_weight
+from queue
+)
+select person_name
+from cte
+where tot_weight <= 1000
+order by tot_weight desc
+limit 1
+
+
+
+--PROBLEM 2: Rank Scores
+/**
+Table: Scores
+
++-------------+---------+
+| Column Name | Type    |
++-------------+---------+
+| id          | int     |
+| score       | decimal |
++-------------+---------+
+id is the primary key (column with unique values) for this table.
+Each row of this table contains the score of a game. Score is a floating point value with two decimal places.
+ 
+
+Write a solution to find the rank of the scores. The ranking should be calculated according to the following rules:
+
+The scores should be ranked from the highest to the lowest.
+If there is a tie between two scores, both should have the same ranking.
+After a tie, the next ranking number should be the next consecutive integer value. In other words, there should be no holes between ranks.
+Return the result table ordered by score in descending order.
+
+The result format is in the following example.
+**/
+
+--SOLUTION
+
+select score, dense_rank() over(order by score desc) as rank
+from scores
+
+--PROBLEM 3: Customers Who Bought All Products
+/**
+Table: Customer
+
++-------------+---------+
+| Column Name | Type    |
++-------------+---------+
+| customer_id | int     |
+| product_key | int     |
++-------------+---------+
+This table may contain duplicates rows. 
+customer_id is not NULL.
+product_key is a foreign key (reference column) to Product table.
+ 
+
+Table: Product
+
++-------------+---------+
+| Column Name | Type    |
++-------------+---------+
+| product_key | int     |
++-------------+---------+
+product_key is the primary key (column with unique values) for this table.
+ 
+
+Write a solution to report the customer ids from the Customer table that bought all the products in the Product table.
+
+Return the result table in any order.
+**/
+
+--SOLUTION
+
+Select customer_id
+from customer
+group by customer_id
+having count(distinct product_key) = (select count(distinct product_key) from product)
+
+--PROBLEM 4: Count Salary Categories
+/**
+Table: Accounts
+
++-------------+------+
+| Column Name | Type |
++-------------+------+
+| account_id  | int  |
+| income      | int  |
++-------------+------+
+account_id is the primary key (column with unique values) for this table.
+Each row contains information about the monthly income for one bank account.
+ 
+
+Write a solution to calculate the number of bank accounts for each salary category. The salary categories are:
+
+"Low Salary": All the salaries strictly less than $20000.
+"Average Salary": All the salaries in the inclusive range [$20000, $50000].
+"High Salary": All the salaries strictly greater than $50000.
+The result table must contain all three categories. If there are no accounts in a category, return 0.
+
+Return the result table in any order.
+**/
+
+--SOLUTION 
+
+Table: Accounts
+
++-------------+------+
+| Column Name | Type |
++-------------+------+
+| account_id  | int  |
+| income      | int  |
++-------------+------+
+account_id is the primary key (column with unique values) for this table.
+Each row contains information about the monthly income for one bank account.
+ 
+
+Write a solution to calculate the number of bank accounts for each salary category. The salary categories are:
+
+"Low Salary": All the salaries strictly less than $20000.
+"Average Salary": All the salaries in the inclusive range [$20000, $50000].
+"High Salary": All the salaries strictly greater than $50000.
+The result table must contain all three categories. If there are no accounts in a category, return 0.
+
+Return the result table in any order.
+
+--PROBLEM 5: Confirmation Rate
+/**
+Table: Signups
+
++----------------+----------+
+| Column Name    | Type     |
++----------------+----------+
+| user_id        | int      |
+| time_stamp     | datetime |
++----------------+----------+
+user_id is the column of unique values for this table.
+Each row contains information about the signup time for the user with ID user_id.
+ 
+
+Table: Confirmations
+
++----------------+----------+
+| Column Name    | Type     |
++----------------+----------+
+| user_id        | int      |
+| time_stamp     | datetime |
+| action         | ENUM     |
++----------------+----------+
+(user_id, time_stamp) is the primary key (combination of columns with unique values) for this table.
+user_id is a foreign key (reference column) to the Signups table.
+action is an ENUM (category) of the type ('confirmed', 'timeout')
+Each row of this table indicates that the user with ID user_id requested a confirmation message at time_stamp and that confirmation message was either confirmed ('confirmed') or expired without confirming ('timeout').
+ 
+
+The confirmation rate of a user is the number of 'confirmed' messages divided by the total number of requested confirmation messages. The confirmation rate of a user that did not request any confirmation messages is 0. Round the confirmation rate to two decimal places.
+
+Write a solution to find the confirmation rate of each user.
+
+Return the result table in any order.
+**/
+
+--SOLUTION
+
+WITH cte AS (
+    SELECT user_id, 
+           CASE WHEN action = 'timeout' THEN 0 ELSE 1 END AS abc
+    FROM confirmations
+)
+SELECT a.user_id, round(coalesce(avg(abc),0),2) AS confirmation_rate
+FROM signups AS a
+LEFT JOIN cte ON cte.user_id = a.user_id
+GROUP BY a.user_id;
