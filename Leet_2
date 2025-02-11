@@ -1,0 +1,184 @@
+--PROOBLEM 1
+/**
+Table: RequestAccepted
+
++----------------+---------+
+| Column Name    | Type    |
++----------------+---------+
+| requester_id   | int     |
+| accepter_id    | int     |
+| accept_date    | date    |
++----------------+---------+
+(requester_id, accepter_id) is the primary key (combination of columns with unique values) for this table.
+This table contains the ID of the user who sent the request, the ID of the user who received the request, and the date when the request was accepted.
+ 
+
+Write a solution to find the people who have the most friends and the most friends number.
+
+The test cases are generated so that only one person has the most friends.
+**/
+
+--SOLUTION
+
+with cte as (
+( select requester_id as id
+from RequestAccepted
+)
+union all
+( select accepter_id as id
+from RequestAccepted
+)
+)
+select id, count(id) as num
+from cte
+group by 1
+order by 2 desc
+limit 1
+
+
+--PROBLEM 2
+
+/**
+Table: Transactions
+
++---------------+---------+
+| Column Name   | Type    |
++---------------+---------+
+| id            | int     |
+| country       | varchar |
+| state         | enum    |
+| amount        | int     |
+| trans_date    | date    |
++---------------+---------+
+id is the primary key of this table.
+The table has information about incoming transactions.
+The state column is an enum of type ["approved", "declined"].
+ 
+
+Write an SQL query to find for each month and country, the number of transactions and their total amount, the number of approved transactions and their total amount.
+
+Return the result table in any order.
+**/
+
+--SOLUTION
+
+select to_char(trans_date, 'YYYY-MM') as month, country,
+count(state) as trans_count,
+sum(case when state = 'approved' then 1 else 0 end) as approved_count,
+sum(amount) as trans_total_amount,
+sum(case when state = 'approved' then amount else 0 end) as approved_total_amount 
+from transactions
+group by 1,2
+
+--PROBLEM 3
+/**
+Table: Users
+
++----------------+---------+
+| Column Name    | Type    |
++----------------+---------+
+| user_id        | int     |
+| join_date      | date    |
+| favorite_brand | varchar |
++----------------+---------+
+user_id is the primary key (column with unique values) of this table.
+This table has the info of the users of an online shopping website where users can sell and buy items.
+ 
+
+Table: Orders
+
++---------------+---------+
+| Column Name   | Type    |
++---------------+---------+
+| order_id      | int     |
+| order_date    | date    |
+| item_id       | int     |
+| buyer_id      | int     |
+| seller_id     | int     |
++---------------+---------+
+order_id is the primary key (column with unique values) of this table.
+item_id is a foreign key (reference column) to the Items table.
+buyer_id and seller_id are foreign keys to the Users table.
+ 
+
+Table: Items
+
++---------------+---------+
+| Column Name   | Type    |
++---------------+---------+
+| item_id       | int     |
+| item_brand    | varchar |
++---------------+---------+
+item_id is the primary key (column with unique values) of this table.
+ 
+
+Write a solution to find for each user, the join date and the number of orders they made as a buyer in 2019.
+
+Return the result table in any order.
+**/
+
+--SOLUTION
+
+select a.user_id as buyer_id, a.join_date, count(b.buyer_id) as orders_in_2019
+from users as a
+left join (
+select * from orders
+where extract(year from order_date) = 2019
+) as b
+on a.user_id = b.buyer_id
+group by 1,2
+order by 1
+
+
+--PROBLEM 4
+/**
+Table: Products
+
++---------------+---------+
+| Column Name   | Type    |
++---------------+---------+
+| product_id    | int     |
+| new_price     | int     |
+| change_date   | date    |
++---------------+---------+
+(product_id, change_date) is the primary key (combination of columns with unique values) of this table.
+Each row of this table indicates that the price of some product was changed to a new price at some date.
+ 
+
+Write a solution to find the prices of all products on 2019-08-16. Assume the price of all products before any change is 10.
+
+Return the result table in any order.
+**/
+
+--SOLUTION
+
+-- Write your PostgreSQL query statement below
+select
+    distinct product_id,
+    10 as price
+from
+    Products
+group by
+    product_id
+having
+    min(change_date) > '2019-08-16'
+
+union
+
+select
+    product_id,
+    new_price as price
+from
+    Products
+where
+    (product_id, change_date) in (
+        select
+            product_id,
+            max(change_date)
+        from
+            Products
+        where
+            change_date <= '2019-08-16'
+        group by
+            product_id
+        )
