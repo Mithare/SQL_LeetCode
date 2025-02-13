@@ -1,0 +1,156 @@
+--PROBLEM 1
+/**
+Table: Insurance
+
++-------------+-------+
+| Column Name | Type  |
++-------------+-------+
+| pid         | int   |
+| tiv_2015    | float |
+| tiv_2016    | float |
+| lat         | float |
+| lon         | float |
++-------------+-------+
+pid is the primary key (column with unique values) for this table.
+Each row of this table contains information about one policy where:
+pid is the policyholder's policy ID.
+tiv_2015 is the total investment value in 2015 and tiv_2016 is the total investment value in 2016.
+lat is the latitude of the policy holder's city. It's guaranteed that lat is not NULL.
+lon is the longitude of the policy holder's city. It's guaranteed that lon is not NULL.
+ 
+
+Write a solution to report the sum of all total investment values in 2016 tiv_2016, for all policyholders who:
+
+have the same tiv_2015 value as one or more other policyholders, and
+are not located in the same city as any other policyholder (i.e., the (lat, lon) attribute pairs must be unique).
+Round tiv_2016 to two decimal places.
+**/
+
+--SOLUTION
+
+SELECT ROUND(SUM(tiv_2016)::NUMERIC,2) AS tiv_2016 
+FROM Insurance 
+WHERE (tiv_2015) IN (SELECT tiv_2015 
+                FROM Insurance 
+                GROUP BY tiv_2015 
+                HAVING COUNT(*) > 1) AND
+                (lat, lon) IN (SELECT lat, lon 
+                            FROM Insurance 
+                            GROUP BY lat,lon 
+                            HAVING count(*) = 1)
+							
+							
+--PROBLEM 2
+/**
+Table: Employee
+
++-------------+---------+
+| Column Name | Type    |
++-------------+---------+
+| id          | int     |
+| name        | varchar |
+| department  | varchar |
+| managerId   | int     |
++-------------+---------+
+id is the primary key (column with unique values) for this table.
+Each row of this table indicates the name of an employee, their department, and the id of their manager.
+If managerId is null, then the employee does not have a manager.
+No employee will be the manager of themself.
+ 
+
+Write a solution to find managers with at least five direct reports.
+
+Return the result table in any order.
+**/
+
+--SOLUTION
+
+SELECT e.Name
+FROM Employee e
+WHERE id IN (
+    SELECT ManagerId
+    FROM Employee
+    WHERE ManagerId IS NOT NULL
+    GROUP BY ManagerId
+    HAVING COUNT(*) >= 5
+);
+
+
+--PROBLEM 3
+/**
+Table: Logs
+
++-------------+---------+
+| Column Name | Type    |
++-------------+---------+
+| id          | int     |
+| num         | varchar |
++-------------+---------+
+In SQL, id is the primary key for this table.
+id is an autoincrement column starting from 1.
+ 
+
+Find all numbers that appear at least three times consecutively.
+
+Return the result table in any order.
+**/
+
+--SOLUTION
+
+with cte as (
+select num,
+lag(num) over(order by id) as lg1,
+lag(num,2) over(order by id) as lg2
+from logs
+)
+select distinct num as ConsecutiveNums 
+from cte
+where num = lg1 and num = lg2
+
+
+--PROBLEM 4
+/**
+Table: Sales
+
++-------------+-------+
+| Column Name | Type  |
++-------------+-------+
+| sale_id     | int   |
+| product_id  | int   |
+| year        | int   |
+| quantity    | int   |
+| price       | int   |
++-------------+-------+
+(sale_id, year) is the primary key (combination of columns with unique values) of this table.
+product_id is a foreign key (reference column) to Product table.
+Each row of this table shows a sale on the product product_id in a certain year.
+Note that the price is per unit.
+ 
+
+Table: Product
+
++--------------+---------+
+| Column Name  | Type    |
++--------------+---------+
+| product_id   | int     |
+| product_name | varchar |
++--------------+---------+
+product_id is the primary key (column with unique values) of this table.
+Each row of this table indicates the product name of each product.
+ 
+
+Write a solution to select the product id, year, quantity, and price for the first year of every product sold.
+
+Return the resulting table in any order.
+**/
+
+--SOLUTION
+
+WITH cte AS (
+    SELECT product_id, MIN(year) AS minyear FROM Sales 
+    GROUP BY product_id 
+)
+
+SELECT s.product_id, s.year AS first_year, s.quantity, s.price 
+FROM Sales s
+INNER JOIN cte ON cte.product_id = s.product_id  AND s.year = cte.minyear
